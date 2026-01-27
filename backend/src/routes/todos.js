@@ -60,10 +60,11 @@ router.post("/", taskValidators, async (req, res) => {
     };
 
     // Publish non-blocking (fire-and-forget). Log any publish errors.
+    // Use infra routing key 'todo.created' to match durable queue binding.
     eventBus
-      .publish("TodoCreated", payload)
+      .publish("todo.created", payload)
       .catch((err) =>
-        console.error("Failed to publish TodoCreated event:", err),
+        console.error("Failed to publish todo.created event:", err),
       );
 
     res.status(201).json(rows[0]);

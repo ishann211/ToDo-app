@@ -2,8 +2,8 @@ const amqp = require("amqplib");
 
 const RABBIT_URL = process.env.RABBITMQ_URL || "amqp://localhost";
 const EXCHANGE = "todos.events";
-const QUEUE = "notification_service";
-const ROUTING_KEY = "TodoCreated";
+const QUEUE = "todos.notification";
+const ROUTING_KEY = "todo.created";
 
 async function start() {
   try {
