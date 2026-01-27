@@ -1,31 +1,33 @@
 const express = require("express");
 const { body, param, validationResult } = require("express-validator");
 const pool = require("../db");
+const eventBus = require("../eventBus");
 
 const router = express.Router();
 
 function handleValidation(req, res) {
   const errors = validationResult(req);
-  if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+  if (!errors.isEmpty())
+    return res.status(400).json({ errors: errors.array() });
 }
 
 const taskValidators = [
   body("task")
     .trim()
-    .notEmpty().withMessage("Task is required")
-    .isLength({ min: 2, max: 255 }).withMessage("Task must be 2-255 characters"),
+    .notEmpty()
+    .withMessage("Task is required")
+    .isLength({ min: 2, max: 255 })
+    .withMessage("Task must be 2-255 characters"),
 ];
 
-const idValidator = [
-  param("id").isInt({ min: 1 }).withMessage("Invalid id"),
-];
+const idValidator = [param("id").isInt({ min: 1 }).withMessage("Invalid id")];
 
 // GET /api/todos (only logged-in user's todos)
 router.get("/", async (req, res) => {
   const userId = req.user.userId;
   const [rows] = await pool.query(
     "SELECT * FROM todos WHERE user_id = ? ORDER BY id DESC",
-    [userId]
+    [userId],
   );
   res.json(rows);
 });
@@ -41,13 +43,28 @@ router.post("/", taskValidators, async (req, res) => {
   try {
     const [result] = await pool.query(
       "INSERT INTO todos (task, user_id) VALUES (?, ?)",
-      [task, userId]
+      [task, userId],
     );
 
     const [rows] = await pool.query(
       "SELECT * FROM todos WHERE id = ? AND user_id = ?",
-      [result.insertId, userId]
+      [result.insertId, userId],
     );
+
+    // Prepare event payload
+    const payload = {
+      event: "TodoCreated",
+      entityId: result.insertId,
+      timestamp: new Date().toISOString(),
+      metadata: { userId, task },
+    };
+
+    // Publish non-blocking (fire-and-forget). Log any publish errors.
+    eventBus
+      .publish("TodoCreated", payload)
+      .catch((err) =>
+        console.error("Failed to publish TodoCreated event:", err),
+      );
 
     res.status(201).json(rows[0]);
   } catch (err) {
@@ -65,7 +82,10 @@ router.put(
   [
     ...idValidator,
     body("task").optional().trim().isLength({ min: 2, max: 255 }),
-    body("completed").optional().isBoolean().withMessage("completed must be boolean"),
+    body("completed")
+      .optional()
+      .isBoolean()
+      .withMessage("completed must be boolean"),
   ],
   async (req, res) => {
     const bad = handleValidation(req, res);
@@ -98,7 +118,7 @@ router.put(
     try {
       const [result] = await pool.query(
         `UPDATE todos SET ${fields.join(", ")} WHERE id = ? AND user_id = ?`,
-        values
+        values,
       );
 
       if (result.affectedRows === 0) {
@@ -107,7 +127,7 @@ router.put(
 
       const [rows] = await pool.query(
         "SELECT * FROM todos WHERE id = ? AND user_id = ?",
-        [id, userId]
+        [id, userId],
       );
 
       res.json(rows[0]);
@@ -118,7 +138,7 @@ router.put(
       console.error(err);
       res.status(500).json({ message: "Server error" });
     }
-  }
+  },
 );
 
 // DELETE /api/todos/:id
@@ -131,7 +151,7 @@ router.delete("/:id", idValidator, async (req, res) => {
 
   const [result] = await pool.query(
     "DELETE FROM todos WHERE id = ? AND user_id = ?",
-    [id, userId]
+    [id, userId],
   );
 
   if (result.affectedRows === 0) {

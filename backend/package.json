@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "nodemon src/server.js",
     "start": "node src/server.js",
+    "consumer": "node consumer/notificationService.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -19,7 +20,8 @@
     "express": "^5.2.1",
     "express-validator": "^7.3.1",
     "jsonwebtoken": "^9.0.3",
-    "mysql2": "^3.16.1"
+    "mysql2": "^3.16.1",
+    "amqplib": "^0.10.3"
   },
   "devDependencies": {
     "nodemon": "^3.1.11"
