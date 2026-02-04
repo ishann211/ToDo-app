@@ -1,0 +1,27 @@
+.app-utility {
+  max-width: var(--max-width);
+  margin: 0 auto;
+}
+.userbar {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  align-items: center;
+}
+.userbar .email {
+  color: var(--muted);
+}
+.brand {
+  font-weight: 700;
+  color: var(--accent);
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
